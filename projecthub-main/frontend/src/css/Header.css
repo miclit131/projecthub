@@ -1,0 +1,9 @@
+.containerHeader {
+    background-color: #3E4847;
+    width: 100%;
+}
+
+.vl {
+    border-left: 1px solid #ffffff;
+    height: 35px;
+}

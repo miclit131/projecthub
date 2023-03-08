@@ -1,0 +1,25 @@
+.text {
+    font-family: "Roboto";
+    font-weight: 450;
+    font-size: 30px;
+    color: #3E4847;
+    text-align: center;
+    letter-spacing: -0.03em;
+    margin-top: 8%;
+}
+
+.box {
+    align-content: center;
+}
+
+.wrapper {
+    margin-top: 2%;
+    display: flex;
+    justify-content: center;
+}
+
+.vl {
+    border-left: 1px solid #3E4847;
+    height: 250px;
+    margin-left: 50px;
+}

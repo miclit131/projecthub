@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  webgl:
+    container_name: {{ .ConName }}
+    build: .
+    ports:
+      - "{{ .ExternalPort }}:{{ .InternalPort }}"

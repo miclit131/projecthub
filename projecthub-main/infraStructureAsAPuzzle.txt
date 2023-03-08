@@ -1,0 +1,122 @@
+Gerade zur Minikube problematiK hat mir:
+https://hasura.io/blog/sharing-a-local-registry-for-minikube-37c7240d0615/
+(sehr anschaulich aber die Proxy Lösung als service deployment hat nicht
+funktioniert)
+
+sehr weiter geholfen die komplexität zu verstehen, muss aber auch sagen
+das ich mit Port forwarding bisher noch nicht so viel zu tun hatte zwischen
+VMs vorallem. Am Ende hätte ich mir jemanden gewünscht der sich etwas mehr in
+dem Bereich Linux/VMs und Kubernetes auskennt, da ich doch etwas alleingelassen
+war mit der Problematik. Leider hab ich das Problem mehrerer Ingress URLs nicht
+lösen können und bei jedem Ansatz ist gefühlt ein unbekanntes Problem aufgetreten.
+Deshalb hier meine Ansammlung an wissen und Tipps die interessant sein können,
+für den der nach mir Folgt. ^^ (ps. es sollte sich zumindest einer in der Gruppe
+mit Kubernetes auskennen oder zumindest schon mal deployments von einer Registry
+ausgeführt haben)
+
+https://gist.github.com/trisberg/37c97b6cc53def9a3e38be6143786589
+
+War der Ansatz über die SCDF Shell die Host registry in die minikube
+registry zu installieren und half mir insecure-registries im Kontext
+minikube zu verstehen. Hier jedoch die Schritte genau durchlesen und
+umsetzen, auch gerne die zwischen Checks ausführen.
+SCDF Shell lief über Docker nicht an, mit etwas mehr Kenntnis bekommt
+man die Shell und den gist.github umgesetzt.
+
+Für die Registry gibt es die Option über Github ein Acess
+token zu generieren um packages über docker push/pull zu
+verwalten.
+https://www.youtube.com/watch?v=qoMg86QA5P4
+
+Die Github registry ghrc.io ist in Minikube ssh erreichbar über 
+docker login ghrc.io user password= acess token.
+
+Kubernetes hat die option images vom Lokalem docker daemon
+zu deployen mit der Option imagePullPolicy: Never im Deployment,
+was man dadurch machen kann wäre die Images über golang Lokal auf minikube
+zu pullen und von dort zu deployen um ein imagePullBackoffError
+zu verhindern.
+
+Eine Aufgabe für die nächste Gruppe wäre es das Problem zu beheben,
+mehrere Lokale URLs für Ingresse verfügbar zu machen.
+
+https://stackoverflow.com/questions/59255445/how-can-i-access-nginx-ingress-on-my-local
+
+Den Hyper-V Ansatz hatte ich bisher noch nicht getestet, eventuell könnte mir in der
+etc/hosts Datei ein Fehler passiert sein. Es könnte sein dass ich eine neue
+Zeile mit 127.0.0.1 Ingress-URL erstellt aber anstelle diese hinter den
+standard localhost eintrag hinzuzufügen.
+
+https://gitlab.mi.hdm-stuttgart.de/ml131/webglExample
+
+Hatten wir für die MediaNight zum Testen eingerichtet, am besten das Repo pullen
+und ein eigenes Public repo einrichten.
+
+https://minikube.sigs.k8s.io/docs/handbook/registry/
+
+In Minikube gibt es die Möglichkeit private Registries einzurichten aber leider
+ist Infrastruktur debugging in Kubernetes ziemlich umständlich in so fern, dass
+nur ein image pull error unauthorized in den Logs steht obwohl die Credentials 
+auf verschiedene Arten hinterlegt wurde.
+
+https://number1.co.za/minikube-deploy-a-container-using-a-private-image-registry/
+
+wäre die option über ein ImagePullSecret, leider wurde das Secret innehalb von
+Minikube nicht verwendet obwohl es im Deployment angegeben war.
+
+https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+
+ist noch ein Guter Link um imagePullsecrets für docker logins externer oder privater
+docker registries einzurichten.
+
+kubectl create secret docker-registry regcred --docker-server=<your-registry-server> --docker-username=<your-name> --docker-password=<your-pword>
+
+Für den Fall, dass man versuchen möchte die minikube registry zu verwenden geht es 
+am einfachsten über einen port forward.
+
+minikube start									|
+minikube addons enable registry							|
+minikube ip -> die ip in den portforward eintragen				|
+kubectl port-forward --namespace kube-system service/registry 53939:80		|
+minikube ssh									|
+curl http://localhost:5000/v2/_catalog  in ssh					|
+{"repositories":[]}								|
+
+https://minikube.sigs.k8s.io/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon
+
+Interessante innerhalb von minikube die ich immer wieder brauchte waren,
+
+minikube dashboard
+kubectl create deployment --image=image
+kubectl run nginx --image=nginx --dry-run=client -o yaml (erstellen der yaml Datei im output)
+					nützlich um z.b. imagePullPolicy hinzuzufügen bevor man
+kubectl apply -f anwendet
+kubectl expose deployment deployment-name
+			
+War mein vorgehen um die minikube registry zum laufen zu bringen.
+Jedoch gab es Probleme mit den verschiedenen docker daemons, einer
+innerhalb der Minikube VM und einer auf der Host Maschine.
+
+https://stackoverflow.com/questions/52310599/what-does-minikube-docker-env-mean
+
+mit eval $() wäre es möglich innerhalb von minikube zu agieren und dessen Docker daemon
+zu verwenden.Jedoch sind wir nicht dazu gekommen, zu testen wie sich das backend verhält
+wenn man versucht die shell enviroment variables zu ändern während der code abläuft.
+
+Als ingress controller haben wir, https://kubernetes.github.io/ingress-nginx/deploy/
+und https://artifacthub.io/packages/helm/ingress-nginx/ingress-nginx verwendet.
+
+Am Ende ist jedoch wichtig mehrere URLs mit dem Ingress-Controller belegen
+zu können um auf diesen die Images darzustellen. Diese URLs werden dann im Frontend
+embedded. Welchen Kubernetes oder nginx Ansatzt man verwendet bestimmt hinterher die
+Probleme die Auftauchen werden. In unserem Fall haben wir Docker Desktop und dessen
+Kubernetes installation verwendet, welche jedoch nur kubernetes.docker.internal in die
+etc/hosts datei als URLs verfügbar macht. Virtual hosts bzw. Nginx Server Blocks wurde
+von unserem Ingress-controller nicht supported.
+https://www.digitalocean.com/community/tutorials/how-to-set-up-nginx-server-blocks-virtual-hosts-on-ubuntu-16-04
+Weshalb wir am Ende nur ein Projekt gleichzeitig unter kubernetes.docker.internal darstellen
+konnten. Eventuell gibt es aber die Option unter der selben ip Adresse andere
+URLs aufzulösen.
+
+
+

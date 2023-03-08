@@ -1,0 +1,19 @@
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: yeet
+spec:
+  ingressClassName: nginx-1
+  rules:
+  - host: yeet.locale.de
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: yeet
+            port:
+              number: 80
